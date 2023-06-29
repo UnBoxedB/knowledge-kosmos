@@ -1,0 +1,21 @@
+{
+  "name": "may31knowledgekosmos",
+  "version": "1.0.0",
+  "description": "Explore through the kosmos",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "author": "UnBoxedB",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^0.24.0",
+    "cors": "^2.8.5",
+    "d3": "^7.8.5",
+    "dotenv": "^16.1.1",
+    "express": "^4.18.2",
+    "openai": "^3.2.1"
+  }
+}
