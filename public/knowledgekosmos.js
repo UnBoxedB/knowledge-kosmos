@@ -3,9 +3,10 @@
 
 //declare variables
 const graph = { nodes: [], links: [] };
+let knowledgeKosmos;
 const fixedWidth = 150; 
 const fontSize = 12;  
-const width = 900;
+const width = 1100;
 const height = 640;
 
 //set up fetch 
@@ -31,7 +32,7 @@ function computeTextBlockHeight(text, maxWidth, fontSize) {
   const words = text.split(" ");
   let line = [];
   let lineNumber = 0;
-  const lineHeight = 1.1; // ems
+  const lineHeight = 1.3; // ems
 
   const tempSvg = d3.create("svg").style("position", "absolute").style("visibility", "hidden");
   document.body.appendChild(tempSvg.node());
@@ -61,7 +62,7 @@ function computeTextBlockHeight(text, maxWidth, fontSize) {
   const textHeight = lineNumber * fontSize * lineHeight;
   //console.log(`Computed height for text: ${textHeight}`);
 
-  return textHeight;
+  return textHeight+24;
 };
 
 //Wrap text in boxes of set width
@@ -72,7 +73,7 @@ function wrap(text, width) {
       let word;
       let line = [];
       let lineNumber = 0;
-      const lineHeight = 1.1; // ems
+      const lineHeight = 1.2; // ems
       const x = text.attr("x");
       const y = text.attr("y");
       const dy = parseFloat(text.attr("dy")) || 0;
@@ -104,23 +105,8 @@ function Topic (id, topic, parent, children, definition, text, clickable) {
     //console.log('Topic:', this.id, this.topic, this.parent, this.children, this.definition, this.displayText, this.clickable)
   };
 
-//build root Topic
-function buildRootTopic (topic){
-    const rootTopic = new Topic(
-        "1",
-        topic,
-        null,
-        [],
-        null,
-        null,
-        null
-    );
-    graph.nodes.push(rootTopic);
-    return graph;
-};
-
 //create children
-function createChildren(parent) {
+function createChildren(graph, parent) {
     let parentsChildren = parent.children;
     let parentID = parent.id;
     let parentName = parent.topic
@@ -140,21 +126,23 @@ function createChildren(parent) {
         const newLink = { source: `${parentID}`, target: `${parentID}.${i+1}`};
         console.log (newLink);
         graph.links.push(newLink);
-        return graph;
     }
+    return graph;
 };
 
 //handle user input
-function expandTopic (graphData, locator, topic, parent) {
+function expandTopic (graph, locator, topic, parent) {
     //fetch data for new topic in context of parent
     fetchTopicData(topic, parent).then((data) => {
         if (data) {
-            //update topic's values
-            graphData.nodes.find(x => x.id === locator).children.push(data.subtopics);
-            graph.nodes.find(x => x.id === locator).definition = data.definition;
-            graph.nodes.find(x => x.id === locator).displayText = data.definition;
-            graph.nodes.find(x => x.id === locator).clickable = false;
-            return createChildren(topic);
+            //update children, definition, displayText and clickable properties of graph.nodes with locator id
+            const node = graph.nodes.find(n => n.id === locator);
+            node.children = data.subtopics;
+            node.definition = data.definition;
+            node.displayText = data.definition || data.topic;
+            node.clickable = !!data.subtopics.length;
+            //build new Topic nodes for children and update knowledgeKosmos graph with new nodes and links information
+            knowledgeKosmos.update(createChildren(graph, node));
         }
     });
 }
@@ -166,10 +154,11 @@ function createKnowledgeKosmos(){
   
     const svg = d3.select('#kosmos').append('svg');
   
-    svg.attr("width", width).attr("height", height).attr("viewBox", [-width / 2, -height / 2, width, height]);
+    svg.attr("width", width).attr("height", height);
+    //.attr("viewBox", [-width / 2, -height / 2, width, height]);
   
     const simulation = d3.forceSimulation()
-        .force("charge", d3.forceManyBody().strength(-500))
+        .force("charge", d3.forceManyBody().strength(-200))
         .force("link", d3.forceLink().id(d => d.id).distance(200))
         .force('center', d3.forceCenter(width / 2, height / 2))
         .on("tick", ticked);
@@ -251,13 +240,15 @@ function createKnowledgeKosmos(){
           .attr("y", 10) // Add padding
           .attr("dy", ".35") // CHECK THIS LATER 
           .attr("font-size", fontSize)
+          .attr("dominant-baseline", "middle")
+          .attr("text-anchor", "middle")
           .text((d) => d.displayText)
           .call(wrap, fixedWidth);
         
         node.call(drag(simulation));
         
         node.filter((d) => !d.definition)
-          .on('dblclick', (event, d) => {
+          .on('click', (event, d) => {
             this.update(expandTopic(graph, d.id, d.topic, d.parent));
           });
       }
@@ -270,10 +261,6 @@ document.getElementById("searchForm").addEventListener("submit", async (event) =
     const searchTerm = document.getElementById('searchTerm');
     const topic = searchTerm.value.trim();
     if (topic) {
-      graph = {
-            nodes: [],
-            links: []
-        };
         graph.nodes.push({
             id: '1',
             topic: topic,
@@ -283,11 +270,8 @@ document.getElementById("searchForm").addEventListener("submit", async (event) =
             displayText: topic,
             clickable: true
         });
-        const update = createKnowledgeKosmos();
-        update({nodes: graph.nodes, links: graph.links});
+        knowledgeKosmos = createKnowledgeKosmos();
         expandTopic(graph, '1', topic, null);
-      const knowledgeKosmos = createKnowledgeKosmos (buildRootTopic(topic));
-      knowledgeKosmos.update(expandTopic(graph, 1, topic, null));
     }
   });
 
