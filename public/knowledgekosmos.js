@@ -241,7 +241,7 @@ function createKnowledgeKosmos(){
           .attr("dy", ".35") // CHECK THIS LATER 
           .attr("font-size", fontSize)
           .attr("dominant-baseline", "middle")
-          .attr("text-anchor", "middle")
+          .attr("text-anchor", "start")
           .text((d) => d.displayText)
           .call(wrap, fixedWidth);
         
