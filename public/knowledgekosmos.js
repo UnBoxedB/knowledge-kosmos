@@ -6,7 +6,7 @@ const graph = { nodes: [], links: [] };
 let knowledgeKosmos;
 const fixedWidth = 150; 
 const fontSize = 12;  
-const width = 1100;
+const width = 1400;
 const height = 640;
 
 //set up fetch 
